@@ -1,0 +1,19 @@
+{
+  "name": "iai-prosecution-tracker",
+  "version": "1.0.0",
+  "description": "WordPress plugin for Innovation Access Initiative — tracks USPTO patent prosecution fee payments and entity status changes",
+  "scripts": {
+    "build": "wp-scripts build assets/src/index.js --output-path=assets/build",
+    "start": "wp-scripts start assets/src/index.js --output-path=assets/build",
+    "lint:js": "wp-scripts lint-js assets/src/",
+    "lint:css": "wp-scripts lint-style assets/src/**/*.css"
+  },
+  "dependencies": {
+    "lucide-react": "^0.263.1"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^27.0.0"
+  },
+  "author": "Innovation Access Initiative",
+  "license": "GPL-2.0-or-later"
+}
