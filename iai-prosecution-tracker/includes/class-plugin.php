@@ -1,0 +1,77 @@
+<?php
+/**
+ * Plugin Core Class
+ *
+ * @package IAI\ProsecutionTracker
+ */
+
+namespace IAI\ProsecutionTracker;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Main Plugin class - Singleton loader
+ */
+class Plugin {
+
+	/**
+	 * Plugin instance
+	 *
+	 * @var Plugin
+	 */
+	private static $instance = null;
+
+	/**
+	 * Get plugin instance
+	 *
+	 * @return Plugin
+	 */
+	public static function get_instance() {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
+
+	/**
+	 * Constructor - register hooks
+	 */
+	private function __construct() {
+		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
+		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+		add_action( 'init', array( $this, 'register_shortcode' ) );
+	}
+
+	/**
+	 * Register admin menu
+	 */
+	public function register_admin_menu() {
+		// Admin menu will be registered here
+	}
+
+	/**
+	 * Register REST API routes
+	 */
+	public function register_rest_routes() {
+		// REST API routes will be registered here
+	}
+
+	/**
+	 * Register shortcode
+	 */
+	public function register_shortcode() {
+		add_shortcode( 'iai_prosecution_tracker', array( $this, 'render_shortcode' ) );
+	}
+
+	/**
+	 * Render shortcode
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_shortcode( $atts ) {
+		return '<div class="iai-pt-app-root" id="iai-prosecution-tracker"></div>';
+	}
+}
