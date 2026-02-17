@@ -43,7 +43,8 @@ spl_autoload_register( function ( $class ) {
     $parts = explode( '/', $relative_path );
     
     // Apply "class-" prefix only to the filename (last part)
-    $parts[ count( $parts ) - 1 ] = 'class-' . $parts[ count( $parts ) - 1 ];
+    $last_index = count( $parts ) - 1;
+    $parts[ $last_index ] = 'class-' . $parts[ $last_index ];
     
     // Lowercase everything and build the final path
     $file = $base_dir . strtolower( implode( '/', $parts ) ) . '.php';
