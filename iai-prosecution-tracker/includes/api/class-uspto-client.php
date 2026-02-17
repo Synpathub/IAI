@@ -65,23 +65,26 @@ class USPTO_Client {
 			return new \WP_Error( 'missing_api_key', 'USPTO API key is not configured.' );
 		}
 
-		$url = $this->base_url . '/applications/search';
+		$base_url = $this->base_url . '/applications/search';
 
-		$body = array(
-			'q'          => $query,
-			'facetField' => array( 'applicationMetaData.firstApplicantName' ),
-			'rows'       => 0,
+		$query_params = array(
+			'q'      => $query,
+			'facets' => 'applicationMetaData.firstApplicantName',
+			'limit'  => 0,
 		);
 
-		$response = wp_remote_post(
+		$url = add_query_arg( $query_params, $base_url );
+
+		error_log( 'IAI PT Request: ' . $url );
+
+		$response = wp_remote_get(
 			$url,
 			array(
 				'headers' => array(
-					'x-api-key'    => $this->api_key,
-					'Content-Type' => 'application/json',
+					'X-API-KEY' => $this->api_key,
+					'Accept'    => 'application/json',
 				),
-				'body'    => wp_json_encode( $body ),
-				'timeout' => $this->timeout,
+				'timeout'   => $this->timeout,
 				'sslverify' => true,
 			)
 		);
@@ -92,6 +95,9 @@ class USPTO_Client {
 
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
+
+		error_log( 'IAI PT Response Code: ' . $response_code );
+		error_log( 'IAI PT Response Body: ' . substr( $response_body, 0, 1000 ) );
 
 		if ( 200 !== $response_code ) {
 			return new \WP_Error(
@@ -106,15 +112,24 @@ class USPTO_Client {
 			return new \WP_Error( 'json_decode_error', 'Failed to parse USPTO API response: ' . json_last_error_msg() );
 		}
 
-		// Extract facet results
-		// The search facet results come in structure: response.facet_counts.facet_fields["applicationMetaData.firstApplicantName"]
-		// which is an alternating array: [name1, count1, name2, count2, ...]
+		// Extract facet results - try multiple paths
 		$applicant_names = array();
-		if ( isset( $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'] ) 
-			&& is_array( $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'] ) ) {
-			
+		$facet_array     = null;
+
+		// Path a) response body -> facetCounts -> firstApplicantName (alternating array)
+		if ( isset( $data['facetCounts']['firstApplicantName'] ) && is_array( $data['facetCounts']['firstApplicantName'] ) ) {
+			$facet_array = $data['facetCounts']['firstApplicantName'];
+		}
+		// Path b) response body -> facets -> applicationMetaData.firstApplicantName
+		elseif ( isset( $data['facets']['applicationMetaData.firstApplicantName'] ) && is_array( $data['facets']['applicationMetaData.firstApplicantName'] ) ) {
+			$facet_array = $data['facets']['applicationMetaData.firstApplicantName'];
+		}
+		// Path c) response body -> facet_counts -> facet_fields -> applicationMetaData.firstApplicantName
+		elseif ( isset( $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'] ) && is_array( $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'] ) ) {
 			$facet_array = $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'];
-			
+		}
+
+		if ( null !== $facet_array ) {
 			// Parse alternating array into [{"name": name1, "count": count1}, ...] format
 			for ( $i = 0; $i < count( $facet_array ); $i += 2 ) {
 				if ( isset( $facet_array[ $i ] ) && isset( $facet_array[ $i + 1 ] ) ) {
@@ -124,6 +139,9 @@ class USPTO_Client {
 					);
 				}
 			}
+		} else {
+			// Log full response if no facet path found
+			error_log( 'IAI PT: No facet data found in response. Full response: ' . wp_json_encode( $data ) );
 		}
 
 		return $applicant_names;
@@ -149,25 +167,28 @@ class USPTO_Client {
 		// Build query using Query_Builder instance
 		$query = $this->query_builder->build_multi_name_query( $applicant_names );
 
-		$url = $this->base_url . '/applications/search';
+		$base_url = $this->base_url . '/applications/search';
 
-		$body = array(
-			'q'    => $query,
-			'fl'   => 'applicationNumberText,filingDate,patentNumber,inventionTitle,applicationStatusDescriptionText,applicationMetaData.firstApplicantName,businessEntityStatusCategory',
-			'rows' => $limit,
-			'start' => $offset,
-			'sort' => 'filingDate desc',
+		$query_params = array(
+			'q'      => $query,
+			'fields' => 'applicationNumberText,filingDate,patentNumber,inventionTitle,applicationStatusDescriptionText,applicationMetaData.firstApplicantName,businessEntityStatusCategory',
+			'limit'  => $limit,
+			'offset' => $offset,
+			'sort'   => 'filingDate desc',
 		);
 
-		$response = wp_remote_post(
+		$url = add_query_arg( $query_params, $base_url );
+
+		error_log( 'IAI PT Request: ' . $url );
+
+		$response = wp_remote_get(
 			$url,
 			array(
 				'headers' => array(
-					'x-api-key'    => $this->api_key,
-					'Content-Type' => 'application/json',
+					'X-API-KEY' => $this->api_key,
+					'Accept'    => 'application/json',
 				),
-				'body'    => wp_json_encode( $body ),
-				'timeout' => $this->timeout,
+				'timeout'   => $this->timeout,
 				'sslverify' => true,
 			)
 		);
@@ -178,6 +199,9 @@ class USPTO_Client {
 
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
+
+		error_log( 'IAI PT Response Code: ' . $response_code );
+		error_log( 'IAI PT Response Body: ' . substr( $response_body, 0, 1000 ) );
 
 		if ( 200 !== $response_code ) {
 			return new \WP_Error(
@@ -230,15 +254,18 @@ class USPTO_Client {
 			return new \WP_Error( 'invalid_application_number', 'Application number is too long.' );
 		}
 
-		$url = $this->base_url . '/' . $application_number . '/transactions';
+		$url = $this->base_url . '/applications/' . $application_number . '/transactions';
+
+		error_log( 'IAI PT Request: ' . $url );
 
 		$response = wp_remote_get(
 			$url,
 			array(
 				'headers' => array(
-					'x-api-key' => $this->api_key,
+					'X-API-KEY' => $this->api_key,
+					'Accept'    => 'application/json',
 				),
-				'timeout' => $this->timeout,
+				'timeout'   => $this->timeout,
 				'sslverify' => true,
 			)
 		);
@@ -249,6 +276,9 @@ class USPTO_Client {
 
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
+
+		error_log( 'IAI PT Response Code: ' . $response_code );
+		error_log( 'IAI PT Response Body: ' . substr( $response_body, 0, 1000 ) );
 
 		if ( 200 !== $response_code ) {
 			return new \WP_Error(
