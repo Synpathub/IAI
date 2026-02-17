@@ -22,7 +22,6 @@ class USPTO_Client {
 		if ( empty( $this->api_key ) ) return new \WP_Error( 'missing_api_key' );
 
 		$url = $this->base_url . '/applications/search';
-		
 		$clean_query = str_replace( array( '(', ')', '*', '"' ), '', $query );
 		$solr_query = 'applicationMetaData.firstApplicantName:(*' . $clean_query . '*)';
 
@@ -76,9 +75,7 @@ class USPTO_Client {
 		$query = $this->query_builder->build_multi_name_query( $applicant_names );
 		$url   = $this->base_url . '/applications/search';
 
-		// FIX: Removed 'fields' parameter completely. 
-		// Requesting specific fields was causing Solr to return 0 results if any field was unmapped.
-		// By removing it, we get the default fields, which guarantees data if the query matches.
+		// NO 'fields' parameter included to ensure maximum compatibility
 		$query_params = array(
 			'q'      => $query,
 			'limit'  => $limit,
