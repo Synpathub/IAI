@@ -188,12 +188,12 @@ class USPTO_Client {
 
 		$base_url = $this->base_url . '/applications/search';
 
+		// FIX: Removed 'sort' => 'filingDate desc' because USPTO API threw "No mapping found for [filingDate]"
 		$query_params = array(
 			'q'      => $query,
 			'fields' => 'applicationNumberText,filingDate,patentNumber,inventionTitle,applicationStatusDescriptionText,applicationMetaData.firstApplicantName,businessEntityStatusCategory',
 			'limit'  => $limit,
 			'offset' => $offset,
-			'sort'   => 'filingDate desc',
 		);
 
 		$url = add_query_arg( $query_params, $base_url );
