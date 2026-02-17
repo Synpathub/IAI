@@ -193,6 +193,10 @@ export function getAllCodes() {
  * @return {Array} - Timeline periods with from, to, status
  */
 export function computeEntityTimeline( events ) {
+	if ( ! events || events.length === 0 ) {
+		return [];
+	}
+
 	// Sort events chronologically
 	const sortedEvents = [ ...events ].sort( ( a, b ) =>
 		a.date.localeCompare( b.date )
@@ -200,7 +204,9 @@ export function computeEntityTimeline( events ) {
 
 	const timeline = [];
 	let currentStatus = 'undiscounted';
-	let currentFrom = null;
+	// Initialize currentFrom with the date of the very first event
+	// This ensures the timeline starts at the beginning of prosecution
+	let currentFrom = sortedEvents[ 0 ].date;
 
 	const entityCodeMap = {
 		'BIG.': 'undiscounted',
@@ -214,8 +220,9 @@ export function computeEntityTimeline( events ) {
 		if ( entityCodeMap[ code ] ) {
 			const newStatus = entityCodeMap[ code ];
 
-			// Close existing period
-			if ( currentFrom !== null ) {
+			// Only close existing period if time has actually passed
+			// This prevents 0-length periods if the first event is a status change
+			if ( date > currentFrom ) {
 				timeline.push( {
 					from: currentFrom,
 					to: date,
@@ -230,13 +237,11 @@ export function computeEntityTimeline( events ) {
 	}
 
 	// Close final period (to = null means ongoing)
-	if ( currentFrom !== null ) {
-		timeline.push( {
-			from: currentFrom,
-			to: null,
-			status: currentStatus,
-		} );
-	}
+	timeline.push( {
+		from: currentFrom,
+		to: null,
+		status: currentStatus,
+	} );
 
 	return timeline;
 }
