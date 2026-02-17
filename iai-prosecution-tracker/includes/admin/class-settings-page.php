@@ -50,7 +50,8 @@ class Settings_Page {
 	 * Register settings page and hooks
 	 */
 	public function register() {
-		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
+		// Directly call add_settings_page since we're already in the admin_menu hook
+		$this->add_settings_page();
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_post_iai_pt_clear_cache', array( $this, 'handle_clear_cache' ) );
 	}
