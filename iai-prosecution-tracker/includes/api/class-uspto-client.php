@@ -21,7 +21,7 @@ class USPTO_Client {
 	 *
 	 * @var string
 	 */
-	private $base_url = 'https://api.uspto.gov/patent/v1';
+	private $base_url = 'https://api.uspto.gov/api/v1/patent';
 
 	/**
 	 * API key
@@ -65,7 +65,7 @@ class USPTO_Client {
 			return new \WP_Error( 'missing_api_key', 'USPTO API key is not configured.' );
 		}
 
-		$url = $this->base_url . '/patent/applications/search';
+		$url = $this->base_url . '/applications/search';
 
 		$body = array(
 			'q'       => $query,
@@ -144,7 +144,7 @@ class USPTO_Client {
 		// Build query using Query_Builder instance
 		$query = $this->query_builder->build_multi_name_query( $applicant_names );
 
-		$url = $this->base_url . '/patent/applications/search';
+		$url = $this->base_url . '/applications/search';
 
 		$body = array(
 			'q'      => $query,
@@ -232,7 +232,7 @@ class USPTO_Client {
 			return new \WP_Error( 'invalid_application_number', 'Application number is too long.' );
 		}
 
-		$url = $this->base_url . '/patent/' . $application_number . '/transactions';
+		$url = $this->base_url . '/' . $application_number . '/transactions';
 
 		$response = wp_remote_get(
 			$url,
