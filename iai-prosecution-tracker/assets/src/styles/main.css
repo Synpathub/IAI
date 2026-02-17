@@ -3,41 +3,8 @@
  * File: assets/src/styles/main.css
  */
 
-.iai-pt-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-}
+/* ... existing styles ... */
 
-.iai-pt-container {
-  display: flex;
-  gap: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  min-height: 600px;
-  overflow: hidden;
-}
-
-/* ... existing sidebar and main styles ... */
-
-.iai-pt-sidebar {
-  width: 350px;
-  flex-shrink: 0;
-  border-right: 1px solid #e5e7eb;
-  background: #f9fafb;
-  display: flex;
-  flex-direction: column;
-}
-
-.iai-pt-main {
-  flex-grow: 1;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-/* Debug Log Styles */
 .iai-pt-debug-container {
   border: 1px solid #e5e7eb;
   border-radius: 6px;
@@ -46,6 +13,10 @@
   font-family: monospace;
   overflow: hidden;
   margin-top: 20px;
+  /* Ensure it sits on top if there are layout issues */
+  position: relative;
+  z-index: 9999; 
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
 }
 
 .iai-pt-debug-header {
@@ -120,6 +91,7 @@
 .iai-pt-log-success .iai-pt-log-tag { color: #34d399; }
 .iai-pt-log-warning .iai-pt-log-tag { color: #fbbf24; }
 .iai-pt-log-info .iai-pt-log-tag { color: #60a5fa; }
+.iai-pt-log-debug .iai-pt-log-tag { color: #a78bfa; }
 
 .iai-pt-log-message {
   color: #fff;
