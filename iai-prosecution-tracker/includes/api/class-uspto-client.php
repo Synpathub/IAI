@@ -68,11 +68,9 @@ class USPTO_Client {
 		$url = $this->base_url . '/applications/search';
 
 		$body = array(
-			'q'       => $query,
-			'facets'  => array( 'firstApplicantName' ),
-			'rows'    => 0,
-			'limit'   => $limit,
-			'offset'  => $offset,
+			'q'          => $query,
+			'facetField' => array( 'applicationMetaData.firstApplicantName' ),
+			'rows'       => 0,
 		);
 
 		$response = wp_remote_post(
@@ -109,13 +107,20 @@ class USPTO_Client {
 		}
 
 		// Extract facet results
+		// The search facet results come in structure: response.facet_counts.facet_fields["applicationMetaData.firstApplicantName"]
+		// which is an alternating array: [name1, count1, name2, count2, ...]
 		$applicant_names = array();
-		if ( isset( $data['facets']['firstApplicantName'] ) && is_array( $data['facets']['firstApplicantName'] ) ) {
-			foreach ( $data['facets']['firstApplicantName'] as $facet ) {
-				if ( isset( $facet['value'] ) && isset( $facet['count'] ) ) {
+		if ( isset( $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'] ) 
+			&& is_array( $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'] ) ) {
+			
+			$facet_array = $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'];
+			
+			// Parse alternating array into [{"name": name1, "count": count1}, ...] format
+			for ( $i = 0; $i < count( $facet_array ); $i += 2 ) {
+				if ( isset( $facet_array[ $i ] ) && isset( $facet_array[ $i + 1 ] ) ) {
 					$applicant_names[] = array(
-						'name'  => $facet['value'],
-						'count' => (int) $facet['count'],
+						'name'  => $facet_array[ $i ],
+						'count' => (int) $facet_array[ $i + 1 ],
 					);
 				}
 			}
@@ -147,18 +152,11 @@ class USPTO_Client {
 		$url = $this->base_url . '/applications/search';
 
 		$body = array(
-			'q'      => $query,
-			'fields' => array(
-				'applicationNumberText',
-				'filingDate',
-				'patentNumber',
-				'inventionTitle',
-				'applicationStatusDescriptionText',
-				'firstApplicantName',
-				'businessEntityStatusCategory',
-			),
-			'rows'   => $limit,
-			'start'  => $offset,
+			'q'    => $query,
+			'fl'   => 'applicationNumberText,filingDate,patentNumber,inventionTitle,applicationStatusDescriptionText,applicationMetaData.firstApplicantName,businessEntityStatusCategory',
+			'rows' => $limit,
+			'start' => $offset,
+			'sort' => 'filingDate desc',
 		);
 
 		$response = wp_remote_post(
