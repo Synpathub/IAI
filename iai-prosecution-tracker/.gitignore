@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output (committed for deployment convenience)
+# Uncomment the line below if you prefer to build on deployment:
+# assets/build/
+
+# NPM
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WordPress
+*.log
