@@ -95,12 +95,7 @@ class Plugin {
 		// If build doesn't exist, show admin notice
 		if ( ! file_exists( $asset_file ) ) {
 			if ( current_user_can( 'manage_options' ) ) {
-				add_action( 'admin_notices', function() {
-					echo '<div class="notice notice-error"><p>';
-					echo '<strong>IAI Prosecution Tracker:</strong> Assets not built. ';
-					echo 'Run <code>npm install && npm run build</code> in the plugin directory.';
-					echo '</p></div>';
-				});
+				add_action( 'admin_notices', array( $this, 'show_build_notice' ) );
 			}
 			return;
 		}
@@ -142,5 +137,15 @@ class Plugin {
 	public function handle_cache_cleanup() {
 		$cache_manager = new Cache\Cache_Manager();
 		$cache_manager->purge_expired();
+	}
+
+	/**
+	 * Show admin notice when assets are not built
+	 */
+	public function show_build_notice() {
+		echo '<div class="notice notice-error"><p>';
+		echo '<strong>IAI Prosecution Tracker:</strong> Assets not built. ';
+		echo 'Run <code>npm install && npm run build</code> in the plugin directory.';
+		echo '</p></div>';
 	}
 }

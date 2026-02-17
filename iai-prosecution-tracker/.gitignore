@@ -1,7 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output (should be built on deployment)
+# Build output (committed for deployment convenience)
+# Uncomment the line below if you prefer to build on deployment:
 # assets/build/
 
 # NPM

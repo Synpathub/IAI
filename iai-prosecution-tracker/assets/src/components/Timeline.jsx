@@ -428,9 +428,7 @@ function Timeline( { application, transactions, loading } ) {
 								event={ event }
 								x={ event.x }
 								y={ event.y }
-								onClick={ ( e ) =>
-									handleEventClick( event, e )
-								}
+								onClick={ handleEventClick }
 							/>
 						) ) }
 					</svg>
