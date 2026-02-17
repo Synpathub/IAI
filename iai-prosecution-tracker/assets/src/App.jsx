@@ -1,8 +1,6 @@
 /**
  * Main App Component
  * Two-panel layout with search/applications sidebar and timeline main area
- * 
- * @package IAI\ProsecutionTracker
  */
 
 import { useState } from '@wordpress/element';
@@ -13,27 +11,29 @@ import ApplicationList from './components/ApplicationList';
 import Timeline from './components/Timeline';
 
 function App() {
-	const [selectedNames, setSelectedNames] = useState([]);
-	const [applications, setApplications] = useState([]);
-	const [selectedApp, setSelectedApp] = useState(null);
-	const [transactions, setTransactions] = useState(null);
-	const [loading, setLoading] = useState(false);
-	const [loadingTimeline, setLoadingTimeline] = useState(false);
+	const [ applications, setApplications ] = useState( [] );
+	const [ selectedApp, setSelectedApp ] = useState( null );
+	const [ transactions, setTransactions ] = useState( null );
+	const [ loading, setLoading ] = useState( false );
+	const [ loadingTimeline, setLoadingTimeline ] = useState( false );
 
 	/**
 	 * Handle fetching applications for selected applicant names
+	 *
+	 * @param {Array} names - Array of applicant names to fetch applications for.
 	 */
-	const handleFetchApplications = async (names) => {
-		if (!names || names.length === 0) return;
+	const handleFetchApplications = async ( names ) => {
+		if ( ! names || names.length === 0 ) {
+			return;
+		}
 
-		setLoading(true);
-		setSelectedNames(names);
-		setApplications([]);
-		setSelectedApp(null);
-		setTransactions(null);
+		setLoading( true );
+		setApplications( [] );
+		setSelectedApp( null );
+		setTransactions( null );
 
 		try {
-			const response = await apiFetch({
+			const response = await apiFetch( {
 				path: '/iai/v1/applications',
 				method: 'POST',
 				data: {
@@ -41,46 +41,62 @@ function App() {
 					limit: 100,
 					offset: 0,
 				},
-			});
+			} );
 
-			if (response.success && response.data) {
-				setApplications(response.data);
+			if ( response.success && response.data ) {
+				setApplications( response.data );
 			} else {
-				console.error('Failed to fetch applications:', response.message);
+				// eslint-disable-next-line no-console
+				console.error(
+					'Failed to fetch applications:',
+					response.message
+				);
 			}
-		} catch (error) {
-			console.error('Error fetching applications:', error);
+		} catch ( error ) {
+			// eslint-disable-next-line no-console
+			console.error( 'Error fetching applications:', error );
 		} finally {
-			setLoading(false);
+			setLoading( false );
 		}
 	};
 
 	/**
 	 * Handle selecting an application to view timeline
+	 *
+	 * @param {string} appNumber - Application number to select.
 	 */
-	const handleSelectApp = async (appNumber) => {
-		if (appNumber === selectedApp) return;
+	const handleSelectApp = async ( appNumber ) => {
+		if ( appNumber === selectedApp ) {
+			return;
+		}
 
-		setSelectedApp(appNumber);
-		setTransactions(null);
-		setLoadingTimeline(true);
+		setSelectedApp( appNumber );
+		setTransactions( null );
+		setLoadingTimeline( true );
 
 		try {
-			const response = await apiFetch({
-				path: `/iai/v1/transactions/${appNumber}`,
+			const response = await apiFetch( {
+				path: `/iai/v1/transactions/${ appNumber }`,
 				method: 'GET',
-			});
+			} );
 
-			if (response.success && response.data) {
-				setTransactions(response.data);
+			if ( response.success && response.data ) {
+				setTransactions( response.data );
 			} else {
-				console.error('Failed to fetch transactions:', response.message);
+				// eslint-disable-next-line no-console
+				console.error(
+					'Failed to fetch transactions:',
+					response.message
+				);
 			}
-		} catch (error) {
-			console.error('Error fetching transactions:', error);
-			setTransactions({ error: error.message || 'Failed to load timeline data' });
+		} catch ( error ) {
+			// eslint-disable-next-line no-console
+			console.error( 'Error fetching transactions:', error );
+			setTransactions( {
+				error: error.message || 'Failed to load timeline data',
+			} );
 		} finally {
-			setLoadingTimeline(false);
+			setLoadingTimeline( false );
 		}
 	};
 
@@ -88,41 +104,46 @@ function App() {
 	 * Get selected application metadata
 	 */
 	const getSelectedAppData = () => {
-		if (!selectedApp) return null;
-		return applications.find(app => app.applicationNumberText === selectedApp);
+		if ( ! selectedApp ) {
+			return null;
+		}
+		return applications.find(
+			( app ) => app.applicationNumberText === selectedApp
+		);
 	};
 
 	return (
 		<div className="iai-pt-container">
 			<div className="iai-pt-sidebar">
-				<SearchPanel onFetchApplications={handleFetchApplications} />
+				<SearchPanel onFetchApplications={ handleFetchApplications } />
 				<ApplicationList
-					applications={applications}
-					selectedApp={selectedApp}
-					onSelectApp={handleSelectApp}
-					loading={loading}
+					applications={ applications }
+					selectedApp={ selectedApp }
+					onSelectApp={ handleSelectApp }
+					loading={ loading }
 				/>
 			</div>
 			<div className="iai-pt-main">
-				{!selectedApp ? (
+				{ ! selectedApp ? (
 					<div className="iai-pt-welcome">
 						<div className="iai-pt-welcome__icon">
-							<FileSearch size={64} />
+							<FileSearch size={ 64 } />
 						</div>
 						<h2 className="iai-pt-welcome__title">
 							Patent Prosecution Fee Tracker
 						</h2>
 						<p className="iai-pt-welcome__text">
-							Search for applicant names and select an application to view its prosecution timeline and fee history.
+							Search for applicant names and select an application
+							to view its prosecution timeline and fee history.
 						</p>
 					</div>
 				) : (
 					<Timeline
-						application={getSelectedAppData()}
-						transactions={transactions}
-						loading={loadingTimeline}
+						application={ getSelectedAppData() }
+						transactions={ transactions }
+						loading={ loadingTimeline }
 					/>
-				)}
+				) }
 			</div>
 		</div>
 	);
