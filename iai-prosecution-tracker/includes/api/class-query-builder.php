@@ -15,17 +15,26 @@ class Query_Builder {
 			$name_str = is_array( $name ) ? ( $name['name'] ?? '' ) : $name;
 			if ( empty( $name_str ) ) continue;
 
-			// Remove characters that break the JSON payload or Solr syntax
-			// We remove parens () because they confuse the Solr parser grouping
-			$clean_name = str_replace( array( '"', '*', '(', ')' ), '', $name_str );
+			// CLEANUP: Replace any non-alphanumeric char with space
+			// "ZTE (USA) INC." -> "ZTE  USA  INC "
+			$clean_name = preg_replace( '/[^a-zA-Z0-9\s]/', ' ', $name_str );
 			
-			// Use the wildcard grouping syntax which is robust for multi-word names
-			// Example: applicationMetaData.firstApplicantName:(*ZTE* AND *CORPORATION*)
-			// We replace spaces with " AND " to enforce all parts of the name match
-			// This matches Experiment B which you confirmed works in Swagger
-			$tokenized_name = str_replace( ' ', '* AND *', $clean_name );
+			$words = explode( ' ', $clean_name );
+			$valid_words = array();
 			
-			$queries[] = 'applicationMetaData.firstApplicantName:(*' . $tokenized_name . '*)';
+			foreach ( $words as $word ) {
+				$word = trim( $word );
+				if ( ! empty( $word ) ) {
+					// Wrap every word in wildcards
+					$valid_words[] = '*' . $word . '*';
+				}
+			}
+			
+			if ( ! empty( $valid_words ) ) {
+				// Join with AND: applicationMetaData.firstApplicantName:(*ZTE* AND *USA* AND *INC*)
+				$query_part = implode( ' AND ', $valid_words );
+				$queries[] = 'applicationMetaData.firstApplicantName:(' . $query_part . ')';
+			}
 		}
 
 		return implode( ' OR ', $queries );
