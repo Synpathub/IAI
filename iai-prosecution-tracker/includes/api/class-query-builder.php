@@ -1,7 +1,7 @@
 <?php
 // File: includes/api/class-query-builder.php
 /**
- * Query Builder
+ * Query Builder for USPTO Solr Engine
  *
  * @package IAI\ProsecutionTracker\API
  */
@@ -13,14 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Query_Builder class - Constructs Solr queries for USPTO API
+ * Query_Builder class - Constructs Solr queries
  */
 class Query_Builder {
 
 	/**
 	 * Build query string for multiple applicant names
-	 *
-	 * @param array $names Array of applicant names (strings).
+	 * * @param array $names Array of names to search for.
 	 * @return string Solr query string.
 	 */
 	public function build_multi_name_query( $names ) {
@@ -30,21 +29,21 @@ class Query_Builder {
 
 		$queries = array();
 		foreach ( $names as $name ) {
-			// Handle case where $name might be passed as an array {name, count}
+			// Extract name string if passed as an object/array
 			$name_str = is_array( $name ) ? ( $name['name'] ?? '' ) : $name;
 			
 			if ( empty( $name_str ) ) {
 				continue;
 			}
 
-			// Escape quotes for exact phrase match in Solr
+			// Escape quotes for exact phrase matching in Solr
 			$escaped_name = str_replace( '"', '\"', $name_str );
 			
-			// Use the correct full path for the applicant name field
+			// Use the identified full field path for exact matching
 			$queries[] = 'applicationMetaData.firstApplicantName:"' . $escaped_name . '"';
 		}
 
-		// Join with OR to return applications belonging to any of the selected applicants
+		// Join with OR to return results matching any of the chosen names
 		return implode( ' OR ', $queries );
 	}
 }
