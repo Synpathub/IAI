@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output (should be built on deployment)
+# assets/build/
+
+# NPM
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WordPress
+*.log

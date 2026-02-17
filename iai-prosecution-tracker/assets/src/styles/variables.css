@@ -1,0 +1,71 @@
+/**
+ * CSS Custom Properties - Design System
+ * 
+ * @package IAI\ProsecutionTracker
+ */
+
+:root {
+	/* Entity Status Colors */
+	--iai-pt-entity-small: #2563EB;
+	--iai-pt-entity-micro: #059669;
+	--iai-pt-entity-large: #DC2626;
+
+	/* Fee Category Colors */
+	--iai-pt-filing-fee: #7C3AED;
+	--iai-pt-issue-fee: #D97706;
+	--iai-pt-rce: #EC4899;
+	--iai-pt-appeal: #F59E0B;
+	--iai-pt-milestone: #6B7280;
+	--iai-pt-other-fee: #6B7280;
+
+	/* Rejection Colors */
+	--iai-pt-rejection: #EF4444;
+	--iai-pt-final-rejection: #B91C1C;
+	--iai-pt-abandoned: #991B1B;
+
+	/* UI Colors */
+	--iai-pt-primary: #2563EB;
+	--iai-pt-primary-hover: #1D4ED8;
+	--iai-pt-border: #E5E7EB;
+	--iai-pt-border-focus: #3B82F6;
+	--iai-pt-bg-hover: #F3F4F6;
+	--iai-pt-bg-selected: #EFF6FF;
+	--iai-pt-text-primary: #111827;
+	--iai-pt-text-secondary: #6B7280;
+	--iai-pt-text-muted: #9CA3AF;
+
+	/* Spacing Scale */
+	--iai-pt-space-xs: 0.25rem;
+	--iai-pt-space-sm: 0.5rem;
+	--iai-pt-space-md: 1rem;
+	--iai-pt-space-lg: 1.5rem;
+	--iai-pt-space-xl: 2rem;
+	--iai-pt-space-2xl: 3rem;
+
+	/* Font Sizes */
+	--iai-pt-text-xs: 0.75rem;
+	--iai-pt-text-sm: 0.875rem;
+	--iai-pt-text-base: 1rem;
+	--iai-pt-text-lg: 1.125rem;
+	--iai-pt-text-xl: 1.25rem;
+	--iai-pt-text-2xl: 1.5rem;
+
+	/* Border Radius */
+	--iai-pt-radius-sm: 0.25rem;
+	--iai-pt-radius-md: 0.375rem;
+	--iai-pt-radius-lg: 0.5rem;
+
+	/* Layout */
+	--iai-pt-sidebar-width: 350px;
+	--iai-pt-header-height: 60px;
+
+	/* Shadows */
+	--iai-pt-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+	--iai-pt-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	--iai-pt-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+	/* Transitions */
+	--iai-pt-transition-fast: 150ms ease-in-out;
+	--iai-pt-transition-base: 200ms ease-in-out;
+	--iai-pt-transition-slow: 300ms ease-in-out;
+}
