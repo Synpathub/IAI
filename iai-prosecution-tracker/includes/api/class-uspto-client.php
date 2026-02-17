@@ -31,6 +31,13 @@ class USPTO_Client {
 	private $api_key;
 
 	/**
+	 * Query builder instance
+	 *
+	 * @var Query_Builder
+	 */
+	private $query_builder;
+
+	/**
 	 * Request timeout in seconds
 	 *
 	 * @var int
@@ -41,7 +48,8 @@ class USPTO_Client {
 	 * Constructor
 	 */
 	public function __construct() {
-		$this->api_key = defined( 'IAI_PT_USPTO_API_KEY' ) ? IAI_PT_USPTO_API_KEY : get_option( 'iai_pt_api_key' );
+		$this->api_key       = defined( 'IAI_PT_USPTO_API_KEY' ) ? IAI_PT_USPTO_API_KEY : get_option( 'iai_pt_api_key' );
+		$this->query_builder = new Query_Builder();
 	}
 
 	/**
@@ -133,9 +141,8 @@ class USPTO_Client {
 			return new \WP_Error( 'invalid_applicant_names', 'Applicant names must be a non-empty array.' );
 		}
 
-		// Build query using Query_Builder
-		$query_builder = new Query_Builder();
-		$query = $query_builder->build_multi_name_query( $applicant_names );
+		// Build query using Query_Builder instance
+		$query = $this->query_builder->build_multi_name_query( $applicant_names );
 
 		$url = $this->base_url . '/patent/applications/search';
 
@@ -199,7 +206,7 @@ class USPTO_Client {
 	/**
 	 * Get transaction history for a specific application
 	 *
-	 * @param string $application_number Application number (e.g., "16123456").
+	 * @param string $application_number Application number (e.g., "16123456" or "16/123,456").
 	 * @return array|\WP_Error Array of transaction events or WP_Error on failure.
 	 */
 	public function get_transactions( $application_number ) {
@@ -211,8 +218,19 @@ class USPTO_Client {
 			return new \WP_Error( 'invalid_application_number', 'Application number is required.' );
 		}
 
-		// Sanitize application number
+		// Sanitize and validate application number
 		$application_number = sanitize_text_field( $application_number );
+		
+		// Validate format: should contain only digits, slashes, and commas
+		// Examples: "16123456", "16/123456", "16/123,456"
+		if ( ! preg_match( '/^[0-9\/,]+$/', $application_number ) ) {
+			return new \WP_Error( 'invalid_application_number', 'Application number contains invalid characters.' );
+		}
+		
+		// Enforce reasonable length limit (typical application numbers are 8-15 characters)
+		if ( strlen( $application_number ) > 20 ) {
+			return new \WP_Error( 'invalid_application_number', 'Application number is too long.' );
+		}
 
 		$url = $this->base_url . '/patent/' . $application_number . '/transactions';
 

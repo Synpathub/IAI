@@ -17,6 +17,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Query_Builder {
 
 	/**
+	 * Maximum length for search query input
+	 */
+	const MAX_QUERY_LENGTH = 500;
+
+	/**
+	 * Maximum number of names in multi-name query
+	 */
+	const MAX_NAMES_COUNT = 50;
+
+	/**
 	 * Build applicant search query from user input
 	 *
 	 * Translates user-friendly search syntax into USPTO ODP query format:
@@ -36,9 +46,14 @@ class Query_Builder {
 		// Sanitize input
 		$user_input = trim( $user_input );
 		
-		// Remove potentially dangerous characters while preserving only safe search operators (* and +)
-		// Exclude quotes, parentheses, and hyphens to prevent query injection
-		$user_input = preg_replace( '/[^\w\s\*\+]/u', '', $user_input );
+		// Enforce length limit to prevent DoS
+		if ( strlen( $user_input ) > self::MAX_QUERY_LENGTH ) {
+			$user_input = substr( $user_input, 0, self::MAX_QUERY_LENGTH );
+		}
+		
+		// Only allow alphanumeric characters, spaces, and safe search operators (* and +)
+		// This prevents query injection through special characters
+		$user_input = preg_replace( '/[^a-zA-Z0-9\s\*\+]/u', '', $user_input );
 		
 		if ( empty( $user_input ) ) {
 			return '';
@@ -62,11 +77,15 @@ class Query_Builder {
 			}
 		}
 
+		if ( empty( $processed_terms ) ) {
+			return '';
+		}
+
 		// Join terms with AND
 		$query_string = implode( ' AND ', $processed_terms );
 		
-		// Wrap in field specifier
-		return 'firstApplicantName:(' . $query_string . ')';
+		// Use sprintf for safer string formatting
+		return sprintf( 'firstApplicantName:(%s)', $query_string );
 	}
 
 	/**
@@ -85,15 +104,28 @@ class Query_Builder {
 			return '';
 		}
 
+		// Enforce limit on number of names to prevent DoS
+		if ( count( $exact_names ) > self::MAX_NAMES_COUNT ) {
+			$exact_names = array_slice( $exact_names, 0, self::MAX_NAMES_COUNT );
+		}
+
 		// Sanitize and quote each name
 		$quoted_names = array();
 		foreach ( $exact_names as $name ) {
 			$name = trim( $name );
 			
-			// Remove potentially dangerous characters
-			$name = preg_replace( '/[\"\']/u', '', $name );
+			// Enforce length limit per name
+			if ( strlen( $name ) > 255 ) {
+				$name = substr( $name, 0, 255 );
+			}
+			
+			// Remove dangerous characters that could break query structure
+			// Only allow alphanumeric, spaces, and common punctuation for company names
+			$name = preg_replace( '/[^\w\s\.\,\&\-]/u', '', $name );
 			
 			if ( ! empty( $name ) ) {
+				// Escape any remaining quotes and wrap in quotes
+				$name = str_replace( '"', '\\"', $name );
 				$quoted_names[] = '"' . $name . '"';
 			}
 		}
@@ -102,7 +134,7 @@ class Query_Builder {
 			return '';
 		}
 
-		// Join with OR and wrap in field specifier
-		return 'firstApplicantName:(' . implode( ' OR ', $quoted_names ) . ')';
+		// Join with OR and wrap in field specifier using sprintf for safety
+		return sprintf( 'firstApplicantName:(%s)', implode( ' OR ', $quoted_names ) );
 	}
 }
