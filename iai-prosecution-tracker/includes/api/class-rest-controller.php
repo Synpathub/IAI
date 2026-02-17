@@ -1,120 +1,101 @@
 <?php
 // File: includes/api/class-rest-controller.php
-/**
- * REST Controller
- *
- * @package IAI\ProsecutionTracker\API
- */
-
 namespace IAI\ProsecutionTracker\API;
+
+use IAI\ProsecutionTracker\Models\Fee_Classifier;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * REST_Controller class
- */
 class REST_Controller extends \WP_REST_Controller {
 
 	protected $namespace = 'iai/v1';
-	protected $client;
+	protected $uspto_client;
+	protected $query_builder;
+	protected $fee_classifier;
 
 	public function __construct() {
-		$this->client = new USPTO_Client();
+		$this->uspto_client   = new USPTO_Client();
+		$this->query_builder  = new Query_Builder();
+		$this->fee_classifier = new Fee_Classifier();
 	}
 
-	/**
-	 * Register routes
-	 */
 	public function register_routes() {
-		// GET /iai/v1/search?query=mira
-		register_rest_route(
-			$this->namespace,
-			'/search',
-			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'search_applicants' ),
-				'permission_callback' => '__return_true',
-			)
-		);
+		register_rest_route( $this->namespace, '/search', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'search_applicants' ),
+			'permission_callback' => '__return_true',
+		) );
 
-		// POST /iai/v1/applications { applicant_names: [] }
-		register_rest_route(
-			$this->namespace,
-			'/applications',
-			array(
-				'methods'             => \WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'get_applications' ),
-				'permission_callback' => '__return_true',
-			)
-		);
+		register_rest_route( $this->namespace, '/applications', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'get_applications' ),
+			'permission_callback' => '__return_true',
+		) );
 
-		// GET /iai/v1/transactions/{id}
-		register_rest_route(
-			$this->namespace,
-			'/transactions/(?P<id>[a-zA-Z0-9\/,]+)',
-			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_transactions' ),
-				'permission_callback' => '__return_true',
-			)
-		);
+		register_rest_route( $this->namespace, '/transactions/(?P<app_number>[a-zA-Z0-9\/,]+)', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_transactions' ),
+			'permission_callback' => '__return_true',
+		) );
 	}
 
-	/**
-	 * Search applicants - Handled via USPTO_Client
-	 */
 	public function search_applicants( $request ) {
 		$query = $request->get_param( 'query' );
+		if ( empty( $query ) ) return new \WP_REST_Response( array( 'message' => 'Query required' ), 400 );
 		
-		if ( empty( $query ) ) {
-			return new \WP_REST_Response( array( 'message' => 'Query is required' ), 400 );
-		}
-
-		$results = $this->client->search_applicants( $query );
-
-		if ( is_wp_error( $results ) ) {
-			return new \WP_REST_Response( array( 
-				'message' => $results->get_error_message(),
-				'data' => $results->get_error_data()
-			), 500 );
-		}
-
+		$results = $this->uspto_client->search_applicants( $query );
+		if ( is_wp_error( $results ) ) return new \WP_REST_Response( array( 'message' => $results->get_error_message() ), 500 );
+		
 		return new \WP_REST_Response( array( 'applicant_names' => $results ), 200 );
 	}
 
-	/**
-	 * Get applications - Handled via USPTO_Client
-	 */
 	public function get_applications( $request ) {
-		$params = $request->get_json_params();
-		$names  = isset( $params['applicant_names'] ) ? $params['applicant_names'] : array();
+		$names = $request->get_param( 'applicant_names' );
+		if ( empty( $names ) ) return new \WP_REST_Response( array( 'message' => 'Names required' ), 400 );
 
-		if ( empty( $names ) ) {
-			return new \WP_REST_Response( array( 'message' => 'Names are required' ), 400 );
+		$result = $this->uspto_client->get_applications( $names );
+
+		if ( is_wp_error( $result ) ) {
+			return new \WP_REST_Response( array( 'message' => $result->get_error_message() ), 500 );
 		}
 
-		$results = $this->client->get_applications( $names );
+		$applications = isset($result['results']) ? $result['results'] : $result;
+		
+		// Include Debug Info
+		$debug_info = array(
+			'url' => isset($result['debug_url']) ? $result['debug_url'] : 'N/A',
+			'query' => isset($result['debug_q']) ? $result['debug_q'] : 'N/A'
+		);
 
-		if ( is_wp_error( $results ) ) {
-			return new \WP_REST_Response( array( 'message' => $results->get_error_message() ), 500 );
-		}
-
-		return new \WP_REST_Response( array( 'applications' => $results, 'total' => count($results) ), 200 );
+		return new \WP_REST_Response( array( 
+			'applications' => $applications, 
+			'total' => count( $applications ),
+			'debug_info' => $debug_info
+		), 200 );
 	}
 
-	/**
-	 * Get transactions
-	 */
 	public function get_transactions( $request ) {
-		$id = $request->get_param( 'id' );
-		$results = $this->client->get_transactions( $id );
+		$id = $request->get_param( 'app_number' );
+		$events = $this->uspto_client->get_transactions( $id );
+		
+		if ( is_wp_error( $events ) ) return new \WP_REST_Response( array( 'message' => $events->get_error_message() ), 500 );
 
-		if ( is_wp_error( $results ) ) {
-			return new \WP_REST_Response( array( 'message' => $results->get_error_message() ), 500 );
+		// Process classifications
+		$processed = array();
+		foreach ( $events as $event ) {
+			$code = $event['recordTransactionCode'] ?? '';
+			$cls = $this->fee_classifier->classify( $code );
+			$item = array(
+				'date' => $event['recordEventDate'] ?? '',
+				'code' => $code,
+				'description' => $event['recordEventDescription'] ?? '',
+			);
+			if($cls) { $item = array_merge($item, $cls); }
+			$processed[] = $item;
 		}
-
-		return new \WP_REST_Response( array( 'events' => $results ), 200 );
+		
+		return new \WP_REST_Response( array( 'events' => $processed ), 200 );
 	}
 }
