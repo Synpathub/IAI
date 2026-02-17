@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<?php
 	// Show success message if cache was cleared
-	if ( isset( $_GET['cache_cleared'] ) && '1' === $_GET['cache_cleared'] ) {
+	if ( isset( $_GET['cache_cleared'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['cache_cleared'] ) ) ) {
 		?>
 		<div class="notice notice-success is-dismissible">
 			<p><?php esc_html_e( 'Cache cleared successfully.', 'iai-prosecution-tracker' ); ?></p>

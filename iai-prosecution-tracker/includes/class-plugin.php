@@ -42,7 +42,7 @@ class Plugin {
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'init', array( $this, 'register_shortcode' ) );
-		add_action( 'iai_pt_cache_cleanup', array( $this, 'register_cache_cleanup' ) );
+		add_action( 'iai_pt_cache_cleanup', array( $this, 'handle_cache_cleanup' ) );
 	}
 
 	/**
@@ -79,9 +79,9 @@ class Plugin {
 	}
 
 	/**
-	 * Register cache cleanup action
+	 * Execute cache cleanup
 	 */
-	public function register_cache_cleanup() {
+	public function handle_cache_cleanup() {
 		$cache_manager = new Cache\Cache_Manager();
 		$cache_manager->purge_expired();
 	}

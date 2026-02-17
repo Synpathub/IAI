@@ -200,8 +200,10 @@ class Settings_Page {
 	 */
 	public function render_transaction_cache_ttl_field() {
 		$value = get_option( 'iai_pt_transaction_cache_ttl', 168 );
+		$days  = intval( $value / 24 );
 		echo '<input type="number" name="iai_pt_transaction_cache_ttl" value="' . esc_attr( $value ) . '" min="1" class="small-text" /> ';
-		echo esc_html__( 'hours (7 days)', 'iai-prosecution-tracker' );
+		/* translators: %d: number of days */
+		echo sprintf( esc_html__( 'hours (%d days)', 'iai-prosecution-tracker' ), $days );
 		echo '<p class="description">' . esc_html__( 'How long to cache transaction histories.', 'iai-prosecution-tracker' ) . '</p>';
 	}
 

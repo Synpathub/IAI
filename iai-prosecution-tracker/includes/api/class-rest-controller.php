@@ -179,7 +179,11 @@ class REST_Controller {
 		// Check cache
 		$cached = $this->cache_manager->get_search( $query_hash );
 		if ( null !== $cached ) {
-			return $this->create_response( $cached );
+			return $this->create_response(
+				array(
+					'applicant_names' => $cached,
+				)
+			);
 		}
 
 		// Build USPTO query
