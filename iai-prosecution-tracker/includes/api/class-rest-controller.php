@@ -68,12 +68,12 @@ class REST_Controller {
 	 * Register REST API routes
 	 */
 	public function register_routes() {
-		// POST /iai/v1/search
+		// GET /iai/v1/search
 		register_rest_route(
 			$this->namespace,
 			'/search',
 			array(
-				'methods'             => 'POST',
+				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'search_applicants' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 				'args'                => array(

@@ -5,6 +5,7 @@
 
 import { useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
+import { addQueryArgs } from '@wordpress/url';
 import { Search, Loader, RefreshCw } from 'lucide-react';
 
 function SearchPanel( { onFetchApplications } ) {
@@ -33,14 +34,15 @@ function SearchPanel( { onFetchApplications } ) {
 		setSelectedNames( [] );
 
 		try {
+			const path = addQueryArgs( '/iai/v1/search', {
+				query: query.trim(),
+				limit: 50,
+				offset: 0,
+			} );
+
 			const response = await apiFetch( {
-				path: '/iai/v1/search',
-				method: 'POST',
-				data: {
-					query: query.trim(),
-					limit: 50,
-					offset: 0,
-				},
+				path,
+				method: 'GET',
 			} );
 
 			if ( response.applicant_names ) {
