@@ -47,22 +47,24 @@ class USPTO_Client {
 
 	/**
 	 * Search for applicant names using faceted search
-	 * * @param string $query Search query
+	 * * @param string $query User search term.
+	 * @return array|\WP_Error
 	 */
-	public function search_applicants( $query, $limit = 50, $offset = 0 ) {
+	public function search_applicants( $query ) {
 		if ( empty( $this->api_key ) ) {
 			return new \WP_Error( 'missing_api_key', 'USPTO API key is not configured.' );
 		}
 
 		$url = $this->base_url . '/applications/search';
 
-		// Solr wildcard search on the specific field to prevent generic 500 errors
-		$solr_query = 'applicationMetaData.firstApplicantName:(*' . $query . '*)';
+		// Solr wildcard search on the specific applicant name field
+		$clean_query = str_replace( '*', '', $query );
+		$solr_query = 'applicationMetaData.firstApplicantName:(*' . $clean_query . '*)';
 
 		$query_params = array(
 			'q'      => $solr_query,
 			'facets' => 'applicationMetaData.firstApplicantName',
-			'limit'  => 1, // Must be 1 or greater
+			'limit'  => 1, // Documentation requires limit > 0
 		);
 
 		$url = add_query_arg( $query_params, $url );
@@ -89,25 +91,23 @@ class USPTO_Client {
 
 		$data = json_decode( $body, true );
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
-			return new \WP_Error( 'json_error', 'Invalid JSON response from USPTO' );
+			return new \WP_Error( 'json_error', 'Invalid JSON from USPTO' );
 		}
 
 		$applicant_names = array();
 		$facet_array     = null;
 
-		// Handle various facet response structures from USPTO
+		// The Swagger docs indicate facets are returned in a specific metadata block
 		if ( isset( $data['facetCounts']['firstApplicantName'] ) ) {
 			$facet_array = $data['facetCounts']['firstApplicantName'];
 		} elseif ( isset( $data['facets']['applicationMetaData.firstApplicantName'] ) ) {
 			$facet_array = $data['facets']['applicationMetaData.firstApplicantName'];
-		} elseif ( isset( $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'] ) ) {
-			$facet_array = $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'];
 		}
 
 		if ( is_array( $facet_array ) && ! empty( $facet_array ) ) {
 			$first = $facet_array[0];
 
-			// Check if API returned [{value: "Name", count: 10}] or ["Name", 10]
+			// Handle both "list of objects" and "alternating array" formats
 			if ( is_array( $first ) || is_object( $first ) ) {
 				foreach ( $facet_array as $item ) {
 					$item = (array) $item;
@@ -136,20 +136,19 @@ class USPTO_Client {
 	/**
 	 * Get patent applications for specified applicant names
 	 */
-	public function get_applications( $applicant_names, $limit = 100, $offset = 0 ) {
+	public function get_applications( $applicant_names ) {
 		if ( empty( $this->api_key ) ) {
-			return new \WP_Error( 'missing_api_key', 'API key missing.' );
+			return new \WP_Error( 'api_key_missing' );
 		}
 
 		$query = $this->query_builder->build_multi_name_query( $applicant_names );
 		$url   = $this->base_url . '/applications/search';
 
-		// We omit 'sort' because 'filingDate' mapping is currently inconsistent on USPTO's side
+		// We omit sorting on filingDate as the USPTO API returned errors for that field mapping
 		$query_params = array(
 			'q'      => $query,
 			'fields' => 'applicationNumberText,filingDate,patentNumber,inventionTitle,applicationStatusDescriptionText,applicationMetaData.firstApplicantName,businessEntityStatusCategory',
-			'limit'  => $limit,
-			'offset' => $offset,
+			'limit'  => 100,
 		);
 
 		$url = add_query_arg( $query_params, $url );
@@ -167,7 +166,7 @@ class USPTO_Client {
 		}
 
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
-		return isset( $data['results'] ) ? $data['results'] : array();
+		return ( isset( $data['results'] ) ) ? $data['results'] : array();
 	}
 
 	/**
@@ -175,7 +174,8 @@ class USPTO_Client {
 	 */
 	public function get_transactions( $application_number ) {
 		$application_number = sanitize_text_field( $application_number );
-		$url = $this->base_url . '/applications/' . $application_number . '/transactions';
+		// Ensure any slashes/commas are handled correctly in the URL path
+		$url = $this->base_url . '/applications/' . rawurlencode($application_number) . '/transactions';
 
 		$response = wp_remote_get( $url, array(
 			'headers' => array( 'X-API-KEY' => $this->api_key, 'Accept' => 'application/json' ),
@@ -187,6 +187,6 @@ class USPTO_Client {
 		}
 
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
-		return isset( $data['eventData'] ) ? $data['eventData'] : array();
+		return ( isset( $data['eventData'] ) ) ? $data['eventData'] : array();
 	}
 }
