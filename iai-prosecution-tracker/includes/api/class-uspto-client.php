@@ -118,7 +118,7 @@ class USPTO_Client {
 		$applicant_names = array();
 		$facet_array     = null;
 
-		// Path a) response body -> facetCounts -> firstApplicantName (alternating array)
+		// Path a) response body -> facetCounts -> firstApplicantName
 		if ( isset( $data['facetCounts']['firstApplicantName'] ) && is_array( $data['facetCounts']['firstApplicantName'] ) ) {
 			$facet_array = $data['facetCounts']['firstApplicantName'];
 		}
@@ -131,14 +131,31 @@ class USPTO_Client {
 			$facet_array = $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'];
 		}
 
-		if ( null !== $facet_array ) {
-			// Parse alternating array into [{"name": name1, "count": count1}, ...] format
-			for ( $i = 0; $i < count( $facet_array ); $i += 2 ) {
-				if ( isset( $facet_array[ $i ] ) && isset( $facet_array[ $i + 1 ] ) ) {
-					$applicant_names[] = array(
-						'name'  => $facet_array[ $i ],
-						'count' => (int) $facet_array[ $i + 1 ],
-					);
+		if ( null !== $facet_array && ! empty( $facet_array ) ) {
+			// Check the format of the first item to determine parsing strategy
+			$first_item = $facet_array[0];
+
+			if ( is_array( $first_item ) || is_object( $first_item ) ) {
+				// FORMAT 1: Array of objects [{value: "Name", count: 10}, ...]
+				// This fixes the "object with keys {value, count}" error
+				foreach ( $facet_array as $item ) {
+					$item = (array) $item;
+					if ( isset( $item['value'] ) && isset( $item['count'] ) ) {
+						$applicant_names[] = array(
+							'name'  => $item['value'],
+							'count' => (int) $item['count'],
+						);
+					}
+				}
+			} else {
+				// FORMAT 2: Alternating flat list ["Name", 10, "Name2", 5, ...]
+				for ( $i = 0; $i < count( $facet_array ); $i += 2 ) {
+					if ( isset( $facet_array[ $i ] ) && isset( $facet_array[ $i + 1 ] ) ) {
+						$applicant_names[] = array(
+							'name'  => $facet_array[ $i ],
+							'count' => (int) $facet_array[ $i + 1 ],
+						);
+					}
 				}
 			}
 		} else {
