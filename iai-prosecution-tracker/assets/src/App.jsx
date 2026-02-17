@@ -43,8 +43,8 @@ function App() {
 				},
 			} );
 
-			if ( response.success && response.data ) {
-				setApplications( response.data );
+			if ( response.applications ) {
+				setApplications( response.applications );
 			} else {
 				// eslint-disable-next-line no-console
 				console.error(
@@ -80,8 +80,8 @@ function App() {
 				method: 'GET',
 			} );
 
-			if ( response.success && response.data ) {
-				setTransactions( response.data );
+			if ( response.events ) {
+				setTransactions( response );
 			} else {
 				// eslint-disable-next-line no-console
 				console.error(
