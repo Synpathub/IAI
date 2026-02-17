@@ -43,9 +43,9 @@ function SearchPanel( { onFetchApplications } ) {
 				},
 			} );
 
-			if ( response.success && response.data ) {
-				setResults( response.data );
-				if ( response.data.length === 0 ) {
+			if ( response.applicant_names ) {
+				setResults( response.applicant_names );
+				if ( response.applicant_names.length === 0 ) {
 					setError(
 						'No applicants found. Try a different search term.'
 					);
