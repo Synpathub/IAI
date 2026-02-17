@@ -36,8 +36,9 @@ class Query_Builder {
 		// Sanitize input
 		$user_input = trim( $user_input );
 		
-		// Remove potentially dangerous characters while preserving search operators
-		$user_input = preg_replace( '/[^\w\s\*\+\-\(\)\"\']/u', '', $user_input );
+		// Remove potentially dangerous characters while preserving only safe search operators (* and +)
+		// Exclude quotes, parentheses, and hyphens to prevent query injection
+		$user_input = preg_replace( '/[^\w\s\*\+]/u', '', $user_input );
 		
 		if ( empty( $user_input ) ) {
 			return '';
