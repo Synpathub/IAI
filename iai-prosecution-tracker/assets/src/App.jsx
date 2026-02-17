@@ -1,6 +1,5 @@
 /**
  * Main App Component
- * Two-panel layout with search/applications sidebar and timeline main area
  */
 
 import { useState } from '@wordpress/element';
@@ -17,132 +16,65 @@ function App() {
 	const [ loading, setLoading ] = useState( false );
 	const [ loadingTimeline, setLoadingTimeline ] = useState( false );
 
-	/**
-	 * Handle fetching applications for selected applicant names
-	 *
-	 * @param {Array} names - Array of applicant names to fetch applications for.
-	 */
 	const handleFetchApplications = async ( names ) => {
-		if ( ! names || names.length === 0 ) {
-			return;
-		}
-
 		setLoading( true );
-		setApplications( [] );
-		setSelectedApp( null );
-		setTransactions( null );
-
 		try {
 			const response = await apiFetch( {
 				path: '/iai/v1/applications',
 				method: 'POST',
-				data: {
-					applicant_names: names,
-					limit: 100,
-					offset: 0,
-				},
+				data: { applicant_names: names },
 			} );
-
-			if ( response.applications ) {
+			// Handle direct application list response
+			if ( response && response.applications ) {
 				setApplications( response.applications );
-			} else {
-				// eslint-disable-next-line no-console
-				console.error(
-					'Failed to fetch applications:',
-					response.message
-				);
 			}
 		} catch ( error ) {
-			// eslint-disable-next-line no-console
 			console.error( 'Error fetching applications:', error );
 		} finally {
 			setLoading( false );
 		}
 	};
 
-	/**
-	 * Handle selecting an application to view timeline
-	 *
-	 * @param {string} appNumber - Application number to select.
-	 */
 	const handleSelectApp = async ( appNumber ) => {
-		if ( appNumber === selectedApp ) {
-			return;
-		}
-
 		setSelectedApp( appNumber );
-		setTransactions( null );
 		setLoadingTimeline( true );
-
 		try {
 			const response = await apiFetch( {
 				path: `/iai/v1/transactions/${ appNumber }`,
 				method: 'GET',
 			} );
-
-			if ( response.events ) {
+			if ( response && response.events ) {
 				setTransactions( response );
-			} else {
-				// eslint-disable-next-line no-console
-				console.error(
-					'Failed to fetch transactions:',
-					response.message
-				);
 			}
 		} catch ( error ) {
-			// eslint-disable-next-line no-console
 			console.error( 'Error fetching transactions:', error );
-			setTransactions( {
-				error: error.message || 'Failed to load timeline data',
-			} );
 		} finally {
 			setLoadingTimeline( false );
 		}
 	};
 
-	/**
-	 * Get selected application metadata
-	 */
-	const getSelectedAppData = () => {
-		if ( ! selectedApp ) {
-			return null;
-		}
-		return applications.find(
-			( app ) => app.applicationNumberText === selectedApp
-		);
-	};
+	const getSelectedAppData = () => applications.find( a => a.applicationNumberText === selectedApp );
 
 	return (
 		<div className="iai-pt-container">
 			<div className="iai-pt-sidebar">
 				<SearchPanel onFetchApplications={ handleFetchApplications } />
-				<ApplicationList
-					applications={ applications }
-					selectedApp={ selectedApp }
-					onSelectApp={ handleSelectApp }
-					loading={ loading }
+				<ApplicationList 
+					applications={ applications } 
+					selectedApp={ selectedApp } 
+					onSelectApp={ handleSelectApp } 
+					loading={ loading } 
 				/>
 			</div>
 			<div className="iai-pt-main">
 				{ ! selectedApp ? (
 					<div className="iai-pt-welcome">
-						<div className="iai-pt-welcome__icon">
-							<FileSearch size={ 64 } />
-						</div>
-						<h2 className="iai-pt-welcome__title">
-							Patent Prosecution Fee Tracker
-						</h2>
-						<p className="iai-pt-welcome__text">
-							Search for applicant names and select an application
-							to view its prosecution timeline and fee history.
-						</p>
+						<FileSearch size={ 64 } />
+						<h2>Patent Prosecution Fee Tracker</h2>
+						<p>Search and select an application to view the timeline.</p>
 					</div>
 				) : (
-					<Timeline
-						application={ getSelectedAppData() }
-						transactions={ transactions }
-						loading={ loadingTimeline }
-					/>
+					<Timeline application={ getSelectedAppData() } transactions={ transactions } loading={ loadingTimeline } />
 				) }
 			</div>
 		</div>
