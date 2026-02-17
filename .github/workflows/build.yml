@@ -1,24 +1,43 @@
-name: Build Frontend Assets
+name: Build and Deploy
 on:
   push:
+    branches: [main]
     paths:
-      - 'iai-prosecution-tracker/assets/src/**'
-      - 'iai-prosecution-tracker/package.json'
+      - 'iai-prosecution-tracker/**'
+  workflow_dispatch:
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - name: Install dependencies
         working-directory: iai-prosecution-tracker
         run: npm install
+
       - name: Build assets
         working-directory: iai-prosecution-tracker
         run: npm run build
-      - uses: stefanzweifel/git-auto-commit-action@v5
+
+      - name: Deploy to WordPress via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          commit_message: 'build: compile frontend assets'
-          file_pattern: 'iai-prosecution-tracker/assets/build/*'
+          server: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./iai-prosecution-tracker/
+          server-dir: /public_html/wp-content/plugins/iai-prosecution-tracker/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/assets/src/**
+            package.json
+            package-lock.json
