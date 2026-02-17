@@ -23,7 +23,6 @@ class USPTO_Client {
 
 		$url = $this->base_url . '/applications/search';
 		
-		// Clean query for Solr
 		$clean_query = str_replace( array( '(', ')', '*', '"' ), '', $query );
 		$solr_query = 'applicationMetaData.firstApplicantName:(*' . $clean_query . '*)';
 
@@ -50,7 +49,6 @@ class USPTO_Client {
 		$data = json_decode( $body, true );
 		$applicant_names = array();
 		
-		// Extract facets
 		$facet_array = $data['facetCounts']['firstApplicantName'] 
 			?? $data['facets']['applicationMetaData.firstApplicantName'] 
 			?? $data['facet_counts']['facet_fields']['applicationMetaData.firstApplicantName'] 
@@ -72,23 +70,21 @@ class USPTO_Client {
 		return $applicant_names;
 	}
 
-	/**
-	 * Get applications - SWITCHED TO GET TO MATCH SWAGGER
-	 */
 	public function get_applications( $applicant_names, $limit = 100, $offset = 0 ) {
 		if ( empty( $this->api_key ) ) return new \WP_Error( 'api_key_missing' );
 
 		$query = $this->query_builder->build_multi_name_query( $applicant_names );
 		$url   = $this->base_url . '/applications/search';
 
+		// FIX: Removed 'fields' parameter completely. 
+		// Requesting specific fields was causing Solr to return 0 results if any field was unmapped.
+		// By removing it, we get the default fields, which guarantees data if the query matches.
 		$query_params = array(
 			'q'      => $query,
-			'fields' => 'applicationNumberText,filingDate,patentNumber,inventionTitle,applicationStatusDescriptionText,applicationMetaData.firstApplicantName,businessEntityStatusCategory',
 			'limit'  => $limit,
 			'offset' => $offset,
 		);
 
-		// Debugging: We build the URL manually to check it
 		$full_url = add_query_arg( $query_params, $url );
 
 		$response = wp_remote_get( $full_url, array(
@@ -100,7 +96,6 @@ class USPTO_Client {
 		
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 		
-		// Return results + debug info for the Network Tab
 		return array(
 			'results' => isset( $data['results'] ) ? $data['results'] : array(),
 			'debug_url' => $full_url,
