@@ -35,9 +35,9 @@ class Query_Builder {
 	 * - Bare words without * are wrapped in wildcards for partial matching
 	 *
 	 * Examples:
-	 * - "Electronics + Telecom*" → firstApplicantName:(*Electronics* AND Telecom*)
-	 * - "Samsung*" → firstApplicantName:(Samsung*)
-	 * - "ETRI" → firstApplicantName:(*ETRI*)
+	 * - "Electronics + Telecom*" → applicationMetaData.firstApplicantName:(*Electronics* AND Telecom*)
+	 * - "Samsung*" → applicationMetaData.firstApplicantName:(Samsung*)
+	 * - "ETRI" → applicationMetaData.firstApplicantName:(*ETRI*)
 	 *
 	 * @param string $user_input User search input.
 	 * @return string USPTO ODP query string.
@@ -85,7 +85,7 @@ class Query_Builder {
 		$query_string = implode( ' AND ', $processed_terms );
 		
 		// Use sprintf for safer string formatting
-		return sprintf( 'firstApplicantName:(%s)', $query_string );
+		return sprintf( 'applicationMetaData.firstApplicantName:(%s)', $query_string );
 	}
 
 	/**
@@ -94,7 +94,7 @@ class Query_Builder {
 	 * Takes array of exact applicant names selected by user and creates an OR query.
 	 *
 	 * Example:
-	 * ["Name One", "Name Two", "Name Three"] → firstApplicantName:("Name One" OR "Name Two" OR "Name Three")
+	 * ["Name One", "Name Two", "Name Three"] → applicationMetaData.firstApplicantName:("Name One" OR "Name Two" OR "Name Three")
 	 *
 	 * @param array $exact_names Array of exact applicant names.
 	 * @return string USPTO ODP query string.
@@ -135,6 +135,6 @@ class Query_Builder {
 		}
 
 		// Join with OR and wrap in field specifier using sprintf for safety
-		return sprintf( 'firstApplicantName:(%s)', implode( ' OR ', $quoted_names ) );
+		return sprintf( 'applicationMetaData.firstApplicantName:(%s)', implode( ' OR ', $quoted_names ) );
 	}
 }
