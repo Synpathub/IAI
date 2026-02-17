@@ -33,8 +33,21 @@ spl_autoload_register( function ( $class ) {
         return;
     }
 
+    // Strip the prefix
     $relative_class = substr( $class, strlen( $prefix ) );
-    $file = $base_dir . 'class-' . strtolower( str_replace( [ '\\', '_' ], [ '/', '-' ], $relative_class ) ) . '.php';
+    
+    // Convert namespace separators to directory separators and underscores to hyphens
+    $relative_path = str_replace( [ '\\', '_' ], [ '/', '-' ], $relative_class );
+    
+    // Split into directory path and class name
+    $parts = explode( '/', $relative_path );
+    
+    // Apply "class-" prefix only to the filename (last part)
+    $last_index = count( $parts ) - 1;
+    $parts[ $last_index ] = 'class-' . $parts[ $last_index ];
+    
+    // Lowercase everything and build the final path
+    $file = $base_dir . strtolower( implode( '/', $parts ) ) . '.php';
 
     if ( file_exists( $file ) ) {
         require_once $file;
