@@ -1,6 +1,5 @@
 /**
- * SearchPanel Component
- * Applicant name search with checkbox list for selection
+ * File: assets/src/components/SearchPanel.jsx
  */
 
 import { useState } from '@wordpress/element';
@@ -8,21 +7,17 @@ import apiFetch from '@wordpress/api-fetch';
 import { addQueryArgs } from '@wordpress/url';
 import { Search, Loader, RefreshCw } from 'lucide-react';
 
-function SearchPanel( { onFetchApplications } ) {
+function SearchPanel( { onFetchApplications, onLog } ) {
 	const [ query, setQuery ] = useState( '' );
 	const [ results, setResults ] = useState( [] );
 	const [ selectedNames, setSelectedNames ] = useState( [] );
 	const [ loading, setLoading ] = useState( false );
 	const [ error, setError ] = useState( null );
 
-	/**
-	 * Handle search submission using GET to align with USPTO search capabilities
-	 */
 	const handleSearch = async ( e ) => {
 		e?.preventDefault();
-
 		if ( ! query.trim() ) {
-			setError( 'Please enter a search query' );
+			setError( 'Please enter a name' );
 			return;
 		}
 
@@ -30,6 +25,9 @@ function SearchPanel( { onFetchApplications } ) {
 		setError( null );
 		setResults( [] );
 		setSelectedNames( [] );
+		
+		// Log the attempt
+		if ( onLog ) onLog( 'INFO', `Searching for: ${ query }` );
 
 		try {
 			const path = addQueryArgs( '/iai/v1/search', {
@@ -38,22 +36,25 @@ function SearchPanel( { onFetchApplications } ) {
 				offset: 0,
 			} );
 
-			const response = await apiFetch( {
-				path: path,
-				method: 'GET',
-			} );
+			const response = await apiFetch( { path, method: 'GET' } );
 
-			// Check for direct data property in the custom REST response
 			if ( response && response.applicant_names ) {
 				setResults( response.applicant_names );
+				if ( onLog ) onLog( 'SUCCESS', `Found ${ response.applicant_names.length } results` );
+				
 				if ( response.applicant_names.length === 0 ) {
-					setError( 'No applicants found.' );
+					setError( 'No matches found.' );
 				}
 			} else {
-				setError( response.message || 'Search failed' );
+				const msg = response.message || 'Search failed';
+				setError( msg );
+				if ( onLog ) onLog( 'WARNING', msg, response );
 			}
 		} catch ( err ) {
-			setError( err.message || 'Failed to search.' );
+			const msg = err.message || 'Server error occurred during search';
+			setError( msg );
+			// Capture the full error object for the debug log
+			if ( onLog ) onLog( 'ERROR', 'Search API Failed', err );
 		} finally {
 			setLoading( false );
 		}
@@ -73,12 +74,12 @@ function SearchPanel( { onFetchApplications } ) {
 
 	return (
 		<div className="iai-pt-search">
-			<h3 className="iai-pt-search__title">Search Applicant Names</h3>
+			<h3 className="iai-pt-search__title">Search Applicants</h3>
 			<div className="iai-pt-search__input-group">
 				<input
 					type="text"
 					className="iai-pt-search__input"
-					placeholder="Enter applicant name..."
+					placeholder="Enter name (e.g. Mira)..."
 					value={ query }
 					onChange={ ( e ) => setQuery( e.target.value ) }
 					onKeyDown={ (e) => e.key === 'Enter' && handleSearch() }
@@ -102,8 +103,7 @@ function SearchPanel( { onFetchApplications } ) {
 						) ) }
 					</div>
 					<button className="iai-pt-search__fetch-button" onClick={ handleFetch } disabled={ selectedNames.length === 0 }>
-						<RefreshCw size={ 16 } />
-						Fetch Applications ({ selectedNames.length })
+						<RefreshCw size={ 16 } /> Fetch Applications ({ selectedNames.length })
 					</button>
 				</div>
 			) }
