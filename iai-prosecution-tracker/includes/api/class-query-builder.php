@@ -13,50 +13,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Query_Builder class - Constructs Solr queries
+ * Query_Builder class - Constructs Solr queries for USPTO API
  */
 class Query_Builder {
 
 	/**
 	 * Build query string for multiple applicant names
 	 *
-	 * @param array $names Array of applicant names.
+	 * @param array $names Array of applicant names (strings).
 	 * @return string Solr query string.
 	 */
 	public function build_multi_name_query( $names ) {
-		if ( empty( $names ) ) {
+		if ( empty( $names ) || ! is_array( $names ) ) {
 			return '';
 		}
 
 		$queries = array();
 		foreach ( $names as $name ) {
-			// Escape special characters in Solr syntax
-			$escaped_name = $this->escape_solr_special_chars( $name );
+			// Handle case where $name might be passed as an array {name, count}
+			$name_str = is_array( $name ) ? ( $name['name'] ?? '' ) : $name;
 			
-			// FIX: Use the full field path 'applicationMetaData.firstApplicantName'
-			// Using quotes "" creates an exact phrase match
+			if ( empty( $name_str ) ) {
+				continue;
+			}
+
+			// Escape quotes for exact phrase match in Solr
+			$escaped_name = str_replace( '"', '\"', $name_str );
+			
+			// Use the correct full path for the applicant name field
 			$queries[] = 'applicationMetaData.firstApplicantName:"' . $escaped_name . '"';
 		}
 
-		// Join with OR to find any of the selected applicants
+		// Join with OR to return applications belonging to any of the selected applicants
 		return implode( ' OR ', $queries );
-	}
-
-	/**
-	 * Escape special characters for Solr query
-	 *
-	 * @param string $string Input string.
-	 * @return string Escaped string.
-	 */
-	private function escape_solr_special_chars( $string ) {
-		// Solr special characters that need escaping
-		$special_chars = array( '+', '-', '&&', '||', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '\\', '/' );
-		
-		$escaped = $string;
-		foreach ( $special_chars as $char ) {
-			$escaped = str_replace( $char, '\\' . $char, $escaped );
-		}
-
-		return $escaped;
 	}
 }
