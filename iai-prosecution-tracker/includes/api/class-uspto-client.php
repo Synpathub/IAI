@@ -29,7 +29,6 @@ class USPTO_Client {
 
 	/**
 	 * Search for applicant names (GET request)
-	 * Simple queries work best with GET and are cacheable.
 	 */
 	public function search_applicants( $query, $limit = 50, $offset = 0 ) {
 		if ( empty( $this->api_key ) ) {
@@ -38,14 +37,13 @@ class USPTO_Client {
 
 		$url = $this->base_url . '/applications/search';
 
-		// Solr wildcard search: applicationMetaData.firstApplicantName:(*QUERY*)
 		$clean_query = str_replace( array( '(', ')', '*', '"' ), '', $query );
 		$solr_query = 'applicationMetaData.firstApplicantName:(*' . $clean_query . '*)';
 
 		$query_params = array(
 			'q'      => $solr_query,
 			'facets' => 'applicationMetaData.firstApplicantName',
-			'limit'  => 1, // Must be > 0
+			'limit'  => 1,
 		);
 
 		$url = add_query_arg( $query_params, $url );
@@ -69,7 +67,6 @@ class USPTO_Client {
 		$applicant_names = array();
 		$facet_array = null;
 
-		// Extract facets
 		if ( isset( $data['facetCounts']['firstApplicantName'] ) ) {
 			$facet_array = $data['facetCounts']['firstApplicantName'];
 		} elseif ( isset( $data['facets']['applicationMetaData.firstApplicantName'] ) ) {
@@ -100,32 +97,30 @@ class USPTO_Client {
 	}
 
 	/**
-	 * Get applications for selected names (POST request)
-	 * Switch to POST to avoid 403 Forbidden / URL length issues with complex queries.
+	 * Get applications for selected names (GET request)
+	 * FIX: Switched from POST to GET to match the behavior of the USPTO Swagger tool.
+	 * POST requests were returning 0 results despite valid queries.
 	 */
 	public function get_applications( $applicant_names, $limit = 100, $offset = 0 ) {
 		if ( empty( $this->api_key ) ) return new \WP_Error( 'api_key_missing' );
 
-		// 1. Build the complex query string
 		$query = $this->query_builder->build_multi_name_query( $applicant_names );
 		$url   = $this->base_url . '/applications/search';
 
-		// 2. Construct the body payload for POST
-		$body = array(
+		$query_params = array(
 			'q'      => $query,
 			'fields' => 'applicationNumberText,filingDate,patentNumber,inventionTitle,applicationStatusDescriptionText,applicationMetaData.firstApplicantName,businessEntityStatusCategory',
 			'limit'  => $limit,
 			'offset' => $offset,
 		);
 
-		// 3. Send via POST (wp_remote_post automatically sets Content-Type to json if we encode it)
-		$response = wp_remote_post( $url, array(
+		$url = add_query_arg( $query_params, $url );
+
+		$response = wp_remote_get( $url, array(
 			'headers' => array( 
 				'X-API-KEY'    => $this->api_key, 
-				'Content-Type' => 'application/json',
 				'Accept'       => 'application/json' 
 			),
-			'body'    => wp_json_encode( $body ),
 			'timeout' => $this->timeout,
 		) );
 
