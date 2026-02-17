@@ -67,10 +67,12 @@ class USPTO_Client {
 
 		$base_url = $this->base_url . '/applications/search';
 
+		// FIX: 'limit' must be 1 or greater according to USPTO API error.
+		// We set it to 1 because we are only interested in the facets (names), not the documents.
 		$query_params = array(
 			'q'      => $query,
 			'facets' => 'applicationMetaData.firstApplicantName',
-			'limit'  => 0,
+			'limit'  => 1,
 		);
 
 		$url = add_query_arg( $query_params, $base_url );
