@@ -16,9 +16,7 @@ function SearchPanel( { onFetchApplications } ) {
 	const [ error, setError ] = useState( null );
 
 	/**
-	 * Handle search submission
-	 *
-	 * @param {Event} e - Form submission event.
+	 * Handle search submission using GET to align with USPTO search capabilities
 	 */
 	const handleSearch = async ( e ) => {
 		e?.preventDefault();
@@ -41,161 +39,73 @@ function SearchPanel( { onFetchApplications } ) {
 			} );
 
 			const response = await apiFetch( {
-				path,
+				path: path,
 				method: 'GET',
 			} );
 
-			if ( response.applicant_names ) {
+			// Check for direct data property in the custom REST response
+			if ( response && response.applicant_names ) {
 				setResults( response.applicant_names );
 				if ( response.applicant_names.length === 0 ) {
-					setError(
-						'No applicants found. Try a different search term.'
-					);
+					setError( 'No applicants found.' );
 				}
 			} else {
 				setError( response.message || 'Search failed' );
 			}
 		} catch ( err ) {
-			// eslint-disable-next-line no-console
-			console.error( 'Search error:', err );
-			setError( err.message || 'Failed to search. Please try again.' );
+			setError( err.message || 'Failed to search.' );
 		} finally {
 			setLoading( false );
 		}
 	};
 
-	/**
-	 * Handle checkbox toggle
-	 *
-	 * @param {string} name - Applicant name to toggle.
-	 */
 	const handleToggle = ( name ) => {
-		setSelectedNames( ( prev ) => {
-			if ( prev.includes( name ) ) {
-				return prev.filter( ( n ) => n !== name );
-			}
-			return [ ...prev, name ];
-		} );
+		setSelectedNames( ( prev ) => 
+			prev.includes( name ) ? prev.filter( ( n ) => n !== name ) : [ ...prev, name ]
+		);
 	};
 
-	/**
-	 * Select all results
-	 */
-	const handleSelectAll = () => {
-		setSelectedNames( results.map( ( r ) => r.name ) );
-	};
-
-	/**
-	 * Clear all selections
-	 */
-	const handleClear = () => {
-		setSelectedNames( [] );
-	};
-
-	/**
-	 * Handle fetch applications button
-	 */
 	const handleFetch = () => {
 		if ( selectedNames.length > 0 ) {
 			onFetchApplications( selectedNames );
 		}
 	};
 
-	/**
-	 * Handle Enter key in search input
-	 *
-	 * @param {Event} e - Keyboard event.
-	 */
-	const handleKeyPress = ( e ) => {
-		if ( e.key === 'Enter' ) {
-			handleSearch();
-		}
-	};
-
 	return (
 		<div className="iai-pt-search">
 			<h3 className="iai-pt-search__title">Search Applicant Names</h3>
-
 			<div className="iai-pt-search__input-group">
 				<input
 					type="text"
 					className="iai-pt-search__input"
-					placeholder="Use + for AND, * for wildcard"
+					placeholder="Enter applicant name..."
 					value={ query }
 					onChange={ ( e ) => setQuery( e.target.value ) }
-					onKeyPress={ handleKeyPress }
+					onKeyDown={ (e) => e.key === 'Enter' && handleSearch() }
 					disabled={ loading }
 				/>
-				<button
-					className="iai-pt-search__button"
-					onClick={ handleSearch }
-					disabled={ loading }
-					aria-label="Search"
-				>
-					{ loading ? (
-						<Loader size={ 16 } className="iai-pt-spinner" />
-					) : (
-						<Search size={ 16 } />
-					) }
+				<button className="iai-pt-search__button" onClick={ handleSearch } disabled={ loading }>
+					{ loading ? <Loader size={ 16 } className="iai-pt-spinner" /> : <Search size={ 16 } /> }
 				</button>
 			</div>
 
 			{ error && <div className="iai-pt-search__error">{ error }</div> }
 
 			{ results.length > 0 && (
-				<>
+				<div className="iai-pt-results-wrapper">
 					<div className="iai-pt-search__results">
 						{ results.map( ( result ) => (
-							<div
-								key={ result.name }
-								className="iai-pt-search__result-item"
-								onClick={ () => handleToggle( result.name ) }
-							>
-								<input
-									type="checkbox"
-									className="iai-pt-search__checkbox"
-									checked={ selectedNames.includes(
-										result.name
-									) }
-									onChange={ () =>
-										handleToggle( result.name )
-									}
-									onClick={ ( e ) => e.stopPropagation() }
-								/>
-								<span className="iai-pt-search__result-label">
-									{ result.name }
-								</span>
-								<span className="iai-pt-search__result-count">
-									({ result.count })
-								</span>
+							<div key={ result.name } className="iai-pt-search__result-item" onClick={ () => handleToggle( result.name ) }>
+								<input type="checkbox" checked={ selectedNames.includes( result.name ) } readOnly />
+								<span className="iai-pt-search__result-label">{ result.name } ({ result.count })</span>
 							</div>
 						) ) }
 					</div>
-
-					<div className="iai-pt-search__actions">
-						<button
-							className="iai-pt-search__action-button"
-							onClick={ handleSelectAll }
-						>
-							Select All
-						</button>
-						<button
-							className="iai-pt-search__action-button"
-							onClick={ handleClear }
-						>
-							Clear
-						</button>
-					</div>
-
-					<button
-						className="iai-pt-search__fetch-button"
-						onClick={ handleFetch }
-						disabled={ selectedNames.length === 0 }
-					>
+					<button className="iai-pt-search__fetch-button" onClick={ handleFetch } disabled={ selectedNames.length === 0 }>
 						<RefreshCw size={ 16 } />
 						Fetch Applications ({ selectedNames.length })
 					</button>
-				</>
+				</div>
 			) }
 		</div>
 	);
