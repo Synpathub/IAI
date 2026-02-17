@@ -214,6 +214,10 @@ class Fee_Classifier {
 	 * @return array Array of timeline periods with 'from', 'to', and 'status'.
 	 */
 	public function compute_entity_timeline( $events ) {
+		if ( empty( $events ) ) {
+			return array();
+		}
+
 		// Sort events by date chronologically
 		usort( $events, function ( $a, $b ) {
 			return strcmp( $a['date'], $b['date'] );
@@ -221,7 +225,10 @@ class Fee_Classifier {
 
 		$timeline        = array();
 		$current_status  = 'undiscounted'; // Default starting status
-		$current_from    = null;
+		
+		// Initialize start date from the very first event
+		$current_from    = $events[0]['date'];
+
 		$entity_code_map = array(
 			'BIG.'  => 'undiscounted',
 			'SMAL'  => 'small',
@@ -235,8 +242,8 @@ class Fee_Classifier {
 			if ( isset( $entity_code_map[ $code ] ) ) {
 				$new_status = $entity_code_map[ $code ];
 				
-				// If we have an existing period, close it
-				if ( null !== $current_from ) {
+				// Only close period if time has actually passed
+				if ( $event['date'] > $current_from ) {
 					$timeline[] = array(
 						'from'   => $current_from,
 						'to'     => $event['date'],
@@ -251,13 +258,11 @@ class Fee_Classifier {
 		}
 
 		// Close the final period (to = null means ongoing)
-		if ( null !== $current_from ) {
-			$timeline[] = array(
-				'from'   => $current_from,
-				'to'     => null,
-				'status' => $current_status,
-			);
-		}
+		$timeline[] = array(
+			'from'   => $current_from,
+			'to'     => null,
+			'status' => $current_status,
+		);
 
 		return $timeline;
 	}
